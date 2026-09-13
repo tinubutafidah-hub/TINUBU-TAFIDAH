@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>T/T Tinubu TAFIDAH Membership Card Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0a1f0a 0%, #006B3F 50%, #0a1f0a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+      color: #0b1f0b;
+      position: relative;
+    }
+
+    /* T² WATERMARK - WEBSITE BACKGROUND */
+    body::before {
+      content: 'T²';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 40vw;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.04);
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      z-index: 0;
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .app-container { 
+      width: 100%; 
+      max-width: 860px; 
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page { display: none; animation: fade 0.35s ease; }
+    .page.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-card {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 28px 24px 30px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border: 3px solid #006B3F;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* T² INSIDE FORM CARD - SMALL */
+    .form-card::after {
+      content: 'T²';
+      position: absolute;
+      bottom: -20px;
+      right: 10px;
+      font-size: 6rem;
+      font-weight: 900;
+      color: rgba(0, 107, 63, 0.06);
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .form-header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #006B3F;
+      position: relative;
+      z-index: 2;
+    }
+
+    .form-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #006B3F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    /* T² INSIDE H1 - SMALL */
+    .form-header h1::after {
+      content: 'T²';
+      position: absolute;
+      top: -8px;
+      right: 0;
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: #006B3F;
+      background: #ffeb3b;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .apc-custom-logo {
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .form-header .subhead {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #1e3c72;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #eef4ff;
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-top: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #222;
+    }
+
+    .form-group label .req { color: #d32f2f; }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 0.95rem;
+      border: 2px solid #ccd8e8;
+      border-radius: 14px;
+      background: #f9fbfd;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #006B3F;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 107, 63, 0.15);
+    }
+
+    .photo-picker-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .photo-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px dashed #006B3F;
+      background: #f4faf4;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #006B3F;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .photo-btn:active {
+      background: #d4ead4;
+    }
+
+    .hidden-file-input { display: none !important; }
+
+    .photo-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 8px;
+      padding: 8px 14px;
+      background: #eaf5ea;
+      border-radius: 14px;
+      border: 1px solid #006B3F;
+    }
+
+    .photo-preview-box img {
+      width: 50px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid #006B3F;
+    }
+
+    .remove-photo-btn {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #c62828;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .btn-create {
+      width: 100%;
+      padding: 16px;
+      background: #006B3F;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(0, 107, 63, 0.3);
+      position: relative;
+      z-index: 2;
+    }
+
+    .btn-create:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .error-msg { 
+      color: #b71c1c; 
+      font-weight: 700; 
+      background: #ffebee; 
+      padding: 10px 14px; 
+      border-radius: 12px; 
+      margin-bottom: 12px; 
+      display: none; 
+      font-size: 0.85rem;
+      position: relative;
+      z-index: 2;
+    }
+    .error-msg.show { display: block; }
+
+    .success-banner { 
+      background: #ffffff; 
+      color: #006B3F; 
+      padding: 14px 20px; 
+      border-radius: 20px; 
+      font-weight: 700; 
+      text-align: center; 
+      margin-bottom: 20px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    /* T² INSIDE SUCCESS BANNER - SMALL */
+    .success-banner::after {
+      content: 'T²';
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #006B3F;
+      background: #ffeb3b;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+    }
+
+    .id-card-wrapper { display: flex; justify-content: center; margin-bottom: 20px; }
+    
+    .id-card { 
+      width: 100%; 
+      max-width: 450px; 
+      aspect-ratio: 85.6 / 53.98; 
+      background: #ffffff; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 12px 28px rgba(0,0,0,0.3); 
+      display: flex; 
+      flex-direction: column; 
+      border: 2px solid #006B3F;
+      position: relative;
+    }
+
+    /* T² INSIDE ID CARD - SMALL (watermark) */
+    .id-card::after {
+      content: 'T²';
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: rgba(0, 107, 63, 0.15);
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      z-index: 5;
+    }
+
+    .card-ribbon { display: flex; height: 5px; width: 100%; }
+    .ribbon-red { background: #D71920; flex: 1; }
+    .ribbon-white { background: #ffffff; flex: 1; }
+    .ribbon-green { background: #006B3F; flex: 1; }
+    .ribbon-blue { background: #00A0E9; flex: 1; }
+
+    .card-header { 
+      background: #006B3F; 
+      padding: 8px 12px; 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      color: white;
+      position: relative;
+    }
+
+    /* T² INSIDE CARD HEADER - SMALL */
+    .card-header::after {
+      content: 'T²';
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: #006B3F;
+      background: #ffeb3b;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+    }
+
+    .card-title-group h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+
+    .card-title-group p {
+      font-size: 0.52rem;
+      color: #ffeb3b;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .card-body { 
+      flex: 1; 
+      padding: 10px 12px; 
+      display: flex; 
+      gap: 10px; 
+      align-items: center;
+      background: #ffffff;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card-photo { 
+      width: 85px; 
+      height: 100px; 
+      object-fit: cover; 
+      border-radius: 6px; 
+      border: 2px solid #006B3F; 
+      background: #e0e0e0;
+    }
+
+    .card-info { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 3px;
+    }
+
+    .member-name { 
+      font-weight: 900; 
+      font-size: 0.95rem; 
+      color: #0b1f0b; 
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .member-tag {
+      font-size: 0.55rem;
+      font-weight: 800;
+      color: #006B3F;
+      background: #eaf5ea;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .membership-box { 
+      background: #f4f8f4; 
+      padding: 4px 6px; 
+      border-radius: 4px; 
+      border-left: 3px solid #006B3F;
+      margin-top: 2px;
+    }
+
+    .membership-label { font-size: 0.48rem; font-weight: 700; color: #666; }
+    .membership-number { font-size: 0.8rem; font-weight: 900; color: #006B3F; font-family: monospace; }
+
+    .meta-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.55rem;
+      color: #333;
+      margin-top: 2px;
+    }
+
+    .meta-details strong { color: #006B3F; }
+
+    .card-qr-col { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center;
+    }
+
+    .qr-code-container { 
+      width: 70px; 
+      height: 70px; 
+    }
+
+    .qr-caption { 
+      font-size: 0.42rem; 
+      font-weight: 800; 
+      color: #006B3F; 
+      margin-top: 2px; 
+    }
+
+    .official-strip { 
+      background: #006B3F; 
+      padding: 4px 12px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      color: white; 
+      font-size: 0.52rem; 
+      font-weight: 700; 
+      position: relative;
+    }
+
+    /* T² INSIDE OFFICIAL STRIP - SMALL */
+    .official-strip::before {
+      content: 'T²';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.55rem;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.4);
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+      pointer-events: none;
+    }
+
+    .official-strip .check { color: #ffeb3b; }
+
+    .action-buttons { display: flex; justify-content: center; margin: 16px 0; gap: 10px; flex-wrap: wrap; }
+    .btn-download { 
+      padding: 14px 28px; 
+      background: #006B3F; 
+      color: white; 
+      border: 2px solid #ffeb3b; 
+      border-radius: 30px; 
+      font-size: 1rem; 
+      font-weight: 800; 
+      cursor: pointer; 
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .btn-download:disabled {
+      background: #999;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-download:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    /* T² INSIDE DOWNLOAD BUTTON - SMALL */
+    .btn-download::after {
+      content: 'T²';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-size: 0.6rem;
+      font-weight: 900;
+      color: #006B3F;
+      background: #ffeb3b;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+    }
+
+    .btn-new {
+      padding: 14px 28px;
+      background: #ffffff;
+      color: #006B3F;
+      border: 2px solid #006B3F;
+      border-radius: 30px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.15s;
+    }
+
+    .btn-new:active {
+      transform: scale(0.97);
+    }
+
+    .camera-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .camera-modal.show { display: flex; }
+    .camera-modal-content {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 16px;
+      max-width: 450px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    /* T² INSIDE CAMERA MODAL - SMALL */
+    .camera-modal-content::after {
+      content: 'T²';
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 0.7rem;
+      font-weight: 900;
+      color: rgba(0, 107, 63, 0.3);
+      font-family: Arial, sans-serif;
+      letter-spacing: -0.05em;
+      pointer-events: none;
+    }
+
+    .camera-video-wrap { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
+    #cameraVideo { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    .camera-controls { display: flex; gap: 10px; justify-content: center; }
+    .camera-btn { padding: 10px 20px; border-radius: 20px; border: none; font-weight: 800; cursor: pointer; }
+    .snap-btn { background: #006B3F; color: white; }
+    .close-btn { background: #d32f2f; color: white; }
+
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .loading-overlay.show { display: flex; }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-top-color: #ffeb3b;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- PAGE 1: FORM -->
+    <div id="page1" class="page active">
+      <div class="form-card">
+        <div class="form-header">
+          <h1>
+            <svg class="apc-custom-logo" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <clipPath id="circleClip">
+                  <circle cx="250" cy="250" r="230"/>
+                </clipPath>
+              </defs>
+              <circle cx="250" cy="250" r="236" fill="#ffffff" stroke="#006B3F" stroke-width="12"/>
+              <g clip-path="url(#circleClip)">
+                <rect x="0" y="0" width="166.66" height="310" fill="#D71920"/>
+                <rect x="166.66" y="0" width="166.66" height="310" fill="#ffffff"/>
+                <rect x="333.32" y="0" width="166.68" height="310" fill="#006B3F"/>
+                <rect x="0" y="310" width="500" height="190" fill="#00A0E9"/>
+              </g>
+              <circle cx="250" cy="250" r="100" fill="#ffffff" stroke="#006B3F" stroke-width="6"/>
+              <text x="250" y="278" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#006B3F">APC</text>
+              <text x="250" y="115" text-anchor="middle" font-size="38" fill="#006B3F">★</text>
+              <text x="250" y="425" text-anchor="middle" font-size="38" fill="#ffffff">★</text>
+            </svg>
+            APC Membership
+          </h1>
+          <div class="subhead">T/T Tinubu TAFIDAH</div>
+        </div>
+
+        <div id="globalError" class="error-msg"></div>
+
+        <form id="registrationForm">
+          <div class="form-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" id="fullName" placeholder="Example: Ibrahim Musa" required>
+          </div>
+
+          <div class="form-group">
+            <label>Phone Number <span class="req">*</span></label>
+            <input type="tel" id="phone" placeholder="08012345678" maxlength="11" required>
+          </div>
+
+          <div class="form-group">
+            <label>State <span class="req">*</span></label>
+            <select id="state" required>
+              <option value="">-- Select State --</option>
+              <option value="Katsina">Katsina</option>
+              <option value="Kano">Kano</option>
+              <option value="Kaduna">Kaduna</option>
+              <option value="Yobe">Yobe</option>
+              <option value="Borno">Borno</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>LGA / Ward <span class="req">*</span></label>
+            <input type="text" id="ward" placeholder="Example: Potiskum - Belewa A" required>
+          </div>
+
+          <div class="form-group">
+            <label>Photo <span class="req">*</span></label>
+            <input type="file" id="inputGallery" class="hidden-file-input" accept="image/*">
+            <input type="file" id="inputCamera" class="hidden-file-input" accept="image/*" capture="user">
+            
+            <div class="photo-picker-buttons">
+              <button type="button" class="photo-btn" id="btnLiveCamera">📷 Camera</button>
+              <button type="button" class="photo-btn" id="btnGallery">🖼️ Gallery</button>
+            </div>
+
+            <div id="photoPreviewBox" class="photo-preview-box" style="display: none;">
+              <img id="photoPreviewImg" src="" alt="preview">
+              <span style="font-size:0.85rem; font-weight:700; color:#006B3F;">✅ Photo uploaded</span>
+              <button type="button" class="remove-photo-btn" id="removePhotoBtn">✕ Remove</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-create" id="btnSubmit">Generate Card</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PAGE 2: ID CARD -->
+    <div id="page2" class="page">
+      <div class="success-banner">
+        Hello <span id="successName"></span>! Your T/T Tinubu TAFIDAH card is ready.
+      </div>
+
+      <div class="id-card-wrapper">
+        <div class="id-card" id="idCard">
+          <div class="card-ribbon">
+            <div class="ribbon-red"></div>
+            <div class="ribbon-white"></div>
+            <div class="ribbon-green"></div>
+            <div class="ribbon-blue"></div>
+          </div>
+
+          <div class="card-header">
+            <svg class="apc-custom-logo" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <clipPath id="circleClipCard">
+                  <circle cx="250" cy="250" r="230"/>
+                </clipPath>
+              </defs>
+              <circle cx="250" cy="250" r="236" fill="#ffffff" stroke="#006B3F" stroke-width="12"/>
+              <g clip-path="url(#circleClipCard)">
+                <rect x="0" y="0" width="166.66" height="310" fill="#D71920"/>
+                <rect x="166.66" y="0" width="166.66" height="310" fill="#ffffff"/>
+                <rect x="333.32" y="0" width="166.68" height="310" fill="#006B3F"/>
+                <rect x="0" y="310" width="500" height="190" fill="#00A0E9"/>
+              </g>
+              <circle cx="250" cy="250" r="100" fill="#ffffff" stroke="#006B3F" stroke-width="6"/>
+              <text x="250" y="278" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#006B3F">APC</text>
+              <text x="250" y="115" text-anchor="middle" font-size="38" fill="#006B3F">★</text>
+              <text x="250" y="425" text-anchor="middle" font-size="38" fill="#ffffff">★</text>
+            </svg>
+            <div class="card-title-group">
+              <h2>T/T Tinubu TAFIDAH — MEMBERSHIP ID</h2>
+              <p>APC SUPPORT & CAMPAIGN ORGANIZATION</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <img id="cardPhoto" class="card-photo" src="" alt="Photo">
+            <div class="card-info">
+              <div id="cardFullName" class="member-name">NAME HERE</div>
+              <div class="member-tag">T/T TINUBU TAFIDAH MEMBER</div>
+              
+              <div class="membership-box">
+                <div class="membership-label">MEMBERSHIP NUMBER</div>
+                <div id="cardMembershipNumber" class="membership-number">TT/APC/2026/0000</div>
+              </div>
+
+              <div class="meta-details">
+                <div>LGA/WARD: <strong id="cardWard">Ward</strong></div>
+                <div>ISSUED: <strong id="cardIssued">12 Sep 2026</strong></div>
+              </div>
+            </div>
+
+            <div class="card-qr-col">
+              <div id="qrcode" class="qr-code-container"></div>
+              <div class="qr-caption">SCAN TO VERIFY</div>
+            </div>
+          </div>
+
+          <div class="official-strip">
+            <span><span class="check">✔</span> OFFICIAL MEMBERSHIP CARD</span>
+            <span id="stripNumber">TT/APC/2026/0000</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-download" id="downloadImgBtn">📥 DOWNLOAD IMAGE (PNG)</button>
+        <button class="btn-new" id="btnNew">🔄 NEW MEMBER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMERA MODAL -->
+  <div id="cameraModal" class="camera-modal">
+    <div class="camera-modal-content">
+      <div class="camera-video-wrap">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+      </div>
+      <div class="camera-controls">
+        <button type="button" class="camera-btn snap-btn" id="cameraSnapBtn">📸 Capture</button>
+        <button type="button" class="camera-btn close-btn" id="cameraCloseBtn">✕ Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div>Sending data...</div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ============================================================
+      // SUPABASE CONFIGURATION
+      // ============================================================
+      const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+      const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+      
+      // Initialize Supabase (only if configured)
+      let supabaseClient = null;
+      if (SUPABASE_URL !== 'https://YOUR_PROJECT_ID.supabase.co' && 
+          SUPABASE_ANON_KEY !== 'YOUR_ANON_KEY') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+
+      // ============================================================
+      // DOM ELEMENTS
+      // ============================================================
+      const page1 = document.getElementById('page1');
+      const page2 = document.getElementById('page2');
+      const form = document.getElementById('registrationForm');
+      
+      const fullNameInput = document.getElementById('fullName');
+      const wardInput = document.getElementById('ward');
+      const phoneInput = document.getElementById('phone');
+      const stateInput = document.getElementById('state');
+      
+      const inputGallery = document.getElementById('inputGallery');
+      const inputCamera = document.getElementById('inputCamera');
+      const btnLiveCamera = document.getElementById('btnLiveCamera');
+      const btnGallery = document.getElementById('btnGallery');
+      const removePhotoBtn = document.getElementById('removePhotoBtn');
+      const photoPreviewBox = document.getElementById('photoPreviewBox');
+      const photoPreviewImg = document.getElementById('photoPreviewImg');
+      
+      const cameraModal = document.getElementById('cameraModal');
+      const cameraVideo = document.getElementById('cameraVideo');
+      const cameraSnapBtn = document.getElementById('cameraSnapBtn');
+      const cameraCloseBtn = document.getElementById('cameraCloseBtn');
+      
+      const downloadImgBtn = document.getElementById('downloadImgBtn');
+      const btnNew = document.getElementById('btnNew');
+      const btnSubmit = document.getElementById('btnSubmit');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      let photoDataUrl = '';
+      let mediaStream = null;
+
+      // ============================================================
+      // HELPERS
+      // ============================================================
+      function showError(msg) {
+        const globalError = document.getElementById('globalError');
+        globalError.textContent = msg;
+        globalError.classList.add('show');
+        setTimeout(() => globalError.classList.remove('show'), 4000);
+      }
+
+      function showLoading(show) {
+        loadingOverlay.classList.toggle('show', show);
+      }
+
+      function generateMembershipNumber() {
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `TT/APC/2026/${rand}`;
+      }
+
+      // ============================================================
+      // GALLERY
+      // ============================================================
+      btnGallery.addEventListener('click', () => {
+        inputGallery.click();
+      });
+      
+      inputGallery.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            photoDataUrl = ev.target.result;
+            photoPreviewImg.src = photoDataUrl;
+            photoPreviewBox.style.display = 'flex';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // ============================================================
+      // CAMERA
+      // ============================================================
+      btnLiveCamera.addEventListener('click', async () => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          cameraModal.classList.add('show');
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ 
+              video: { facingMode: 'user' }, 
+              audio: false 
+            });
+            cameraVideo.srcObject = mediaStream;
+          } catch (err) {
+            console.warn('getUserMedia failed, using native camera:', err);
+            cameraModal.classList.remove('show');
+            inputCamera.click();
+          }
+        } else {
+          inputCamera.click();
+        }
+      });
+
+      inputCamera.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            photoDataUrl = ev.target.result;
+            photoPreviewImg.src = photoDataUrl;
+            photoPreviewBox.style.display = 'flex';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      cameraCloseBtn.addEventListener('click', () => {
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+        cameraModal.classList.remove('show');
+      });
+
+      cameraSnapBtn.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = cameraVideo.videoWidth || 640;
+        canvas.height = cameraVideo.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+        
+        photoDataUrl = canvas.toDataURL('image/png');
+        photoPreviewImg.src = photoDataUrl;
+        photoPreviewBox.style.display = 'flex';
+
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+        cameraModal.classList.remove('show');
+      });
+
+      removePhotoBtn.addEventListener('click', () => {
+        photoDataUrl = '';
+        photoPreviewBox.style.display = 'none';
+        inputGallery.value = '';
+        inputCamera.value = '';
+      });
+
+      // ============================================================
+      // SUBMIT FORM
+      // ============================================================
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!photoDataUrl) {
+          showError('⚠️ Please upload a photo.');
+          return;
+        }
+
+        const name = fullNameInput.value.trim();
+        const ward = wardInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const state = stateInput.value;
+        const memNum = generateMembershipNumber();
+
+        showLoading(true);
+        btnSubmit.disabled = true;
+
+        // ===== SEND TO SUPABASE =====
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient
+              .from('memberships')
+              .insert([{
+                full_name: name,
+                phone: phone,
+                state: state,
+                ward: ward,
+                photo_url: photoDataUrl,
+                membership_number: memNum
+              }]);
+
+            if (error) {
+              console.error('Supabase error:', error);
+              showError('⚠️ Could not save to database. Showing card locally.');
+            } else {
+              console.log('✅ Saved to Supabase:', data);
+            }
+          } catch (err) {
+            console.error('Supabase connection error:', err);
+            showError('⚠️ Could not connect to database. Showing card locally.');
+          }
+        } else {
+          console.warn('Supabase not configured. Skipping database save.');
+        }
+
+        showLoading(false);
+        btnSubmit.disabled = false;
+
+        // ===== SHOW CARD =====
+        document.getElementById('successName').textContent = name;
+        document.getElementById('cardFullName').textContent = name;
+        document.getElementById('cardMembershipNumber').textContent = memNum;
+        document.getElementById('stripNumber').textContent = memNum;
+        document.getElementById('cardWard').textContent = ward;
+        document.getElementById('cardPhoto').src = photoDataUrl;
+
+        const today = new Date();
+        const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec'];
+        document.getElementById('cardIssued').textContent =
+          `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+        const qrcodeDiv = document.getElementById('qrcode');
+        qrcodeDiv.innerHTML = '';
+        new QRCode(qrcodeDiv, {
+          text: `VERIFIED: ${name} | ID: ${memNum}`,
+          width: 70,
+          height: 70,
+          colorDark: "#006B3F",
+          colorLight: "#ffffff"
+        });
+
+        page1.classList.remove('active');
+        page2.classList.add('active');
+        window.scrollTo(0, 0);
+      });
+
+      // ============================================================
+      // DOWNLOAD IMAGE (PNG) - FIXED
+      // ============================================================
+      downloadImgBtn.addEventListener('click', async () => {
+        const cardElem = document.getElementById('idCard');
+        const originalText = downloadImgBtn.innerHTML;
+        
+        downloadImgBtn.disabled = true;
+        downloadImgBtn.innerHTML = '⏳ Preparing...';
+        
+        try {
+          // Wait for QR code to render
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const canvas = await html2canvas(cardElem, {
+            scale: 4,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            logging: false,
+            imageTimeout: 15000
+          });
+          
+          const cleanName = fullNameInput.value.trim()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zA-Z0-9_]/g, '') || 'Member';
+          const dateStr = new Date().toISOString().split('T')[0];
+          const filename = `TT_Tinubu_TAFIDAH_${cleanName}_${dateStr}.png`;
+          
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              alert('❌ Error generating image');
+              downloadImgBtn.disabled = false;
+              downloadImgBtn.innerHTML = originalText;
+              return;
+            }
+            
+            // Try native share (works on mobile)
+            if (navigator.share && navigator.canShare && 
+                navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })) {
+              const file = new File([blob], filename, { type: 'image/png' });
+              navigator.share({
+                files: [file],
+                title: 'T/T Tinubu TAFIDAH Card',
+                text: 'My membership card'
+              }).then(() => {
+                console.log('✅ Shared');
+              }).catch(() => {
+                // Fallback: download directly
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              });
+            } else {
+              // Direct download (works on desktop)
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+            
+            downloadImgBtn.disabled = false;
+            downloadImgBtn.innerHTML = '✅ Downloaded!';
+            setTimeout(() => {
+              downloadImgBtn.innerHTML = originalText;
+            }, 2000);
+            
+          }, 'image/png', 1.0);
+          
+        } catch (err) {
+          console.error('Download error:', err);
+          alert('❌ Error downloading image. Please try again.');
+          downloadImgBtn.disabled = false;
+          downloadImgBtn.innerHTML = originalText;
+        }
+      });
+
+      // ============================================================
+      // NEW MEMBER (Reset form)
+      // ============================================================
+      btnNew.addEventListener('click', () => {
+        if (!confirm('Start a new registration? Current card will be lost.')) return;
+        
+        // Reset form
+        form.reset();
+        photoDataUrl = '';
+        photoPreviewBox.style.display = 'none';
+        inputGallery.value = '';
+        inputCamera.value = '';
+        
+        // Go back to page 1
+        page2.classList.remove('active');
+        page1.classList.add('active');
+        window.scrollTo(0, 0);
+      });
+
+    })();
+  </script>
+</body>
+</html>
